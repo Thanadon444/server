@@ -135,6 +135,35 @@ public class AccountsController(
         return new PaymentResponseModel { Success = true, PaymentIntentClientSecret = result };
     }
 
+    [HttpPost("top-up")]
+    [SelfHosted(NotSelfHostedOnly = true)]
+    public async Task<TopUpResponseModel> PostTopUpAsync(
+        [FromBody] TopUpRequestModel model,
+        [FromServices] IPaymentService paymentService)
+    {
+        var user = await userService.GetUserByPrincipalAsync(User);
+        if (user == null)
+        {
+            throw new UnauthorizedAccessException();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            throw new BadRequestException("Invalid top up request.");
+        }
+
+        var success = await paymentService.CreditAccountAsync(user, model.Amount);
+
+        return new TopUpResponseModel
+        {
+            Success = success,
+            Country = model.Country.ToUpperInvariant(),
+            AppCountry = model.AppCountry.ToUpperInvariant(),
+            SettlementCountry = "TH",
+            Currency = "THB"
+        };
+    }
+
 
 
     [HttpPost("license")]
